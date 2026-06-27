@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>9v9 Football Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+  <!-- ── Auth Screen ────────────────────────────────────── -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="auth-brand__mark">9V9</div>
+        <div class="auth-brand__text">
+          <span class="auth-brand__title">Football Hub</span>
+          <span class="auth-brand__sub">Coaching Interface</span>
+        </div>
+      </div>
+
+      <form id="login-form" class="auth-form">
+        <div class="form-group">
+          <label class="form-label" for="login-email">Email</label>
+          <input class="form-input" id="login-email" type="email" autocomplete="email" placeholder="coach@team.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="login-password">Password</label>
+          <input class="form-input" id="login-password" type="password" autocomplete="current-password" required>
+        </div>
+        <p id="login-error" class="form-error"></p>
+        <button type="submit" class="btn btn--primary btn--full">Sign In</button>
+      </form>
+
+      <p class="auth-footer">Players don't need to sign in — <a href="player.html" class="auth-link">open the playbook</a></p>
+    </div>
+  </div>
+
+  <!-- ── App Shell ──────────────────────────────────────── -->
+  <div id="app-shell" class="app-shell hidden">
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar__brand">
+        <div class="sidebar__mark">9V9</div>
+        <span class="sidebar__title">Football Hub</span>
+      </div>
+
+      <nav id="main-nav" class="main-nav"></nav>
+
+      <div class="sidebar__footer">
+        <div id="user-badge" class="user-badge"></div>
+        <button id="logout-btn" class="logout-btn" title="Sign out">↪ Sign Out</button>
+      </div>
+    </aside>
+
+    <!-- Main area -->
+    <div class="main-area">
+      <header class="app-header">
+        <button id="menu-toggle" class="menu-toggle" aria-label="Toggle menu">☰</button>
+        <h1 id="page-title" class="page-title">Dashboard</h1>
+      </header>
+
+      <main id="main-content" class="main-content"></main>
+    </div>
+
+  </div>
+
+  <!-- Toast container injected by JS -->
+  <div id="toast-container"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
