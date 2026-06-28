@@ -1283,3 +1283,368 @@ input, select, textarea { font: inherit; }
   .pd-sidebar-right { max-height: 320px; }
   .pd-canvas-wrap   { min-height: 300px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   PHASE 3 — Play Library, Game Plans, Opponents
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Play Library ───────────────────────────────────────────── */
+.library-layout { display: flex; flex-direction: column; gap: var(--space-5); }
+
+.library-filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--space-4);
+}
+
+.lib-tabs { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+.lib-tab {
+  padding: var(--space-2) var(--space-4);
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--chalk-dim);
+  transition: all var(--t-fast);
+}
+.lib-tab.active { background: var(--turf-light); border-color: var(--signal); color: var(--signal); }
+
+.lib-search-row { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+
+.pending-bar {
+  background: var(--turf-light);
+  border: 1px solid var(--signal);
+  border-radius: var(--r-md);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  font-size: 13px;
+  color: var(--signal);
+  font-weight: 600;
+}
+
+.pending-actions { display: flex; flex-direction: column; gap: var(--space-2); }
+
+.pending-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--chalk);
+}
+.pending-item span { flex: 1; }
+
+.lib-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-5);
+}
+
+.play-lib-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  transition: border-color var(--t-fast), transform var(--t-fast);
+  display: flex;
+  flex-direction: column;
+}
+.play-lib-card:hover { border-color: var(--border-light); transform: translateY(-2px); }
+
+.play-lib-card__diagram {
+  aspect-ratio: 4/3;
+  background: var(--surface-0);
+  overflow: hidden;
+}
+
+.play-lib-card__body { padding: var(--space-4); flex: 1; display: flex; flex-direction: column; gap: var(--space-2); }
+
+.play-lib-card__header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); }
+.play-lib-card__name   { font-family: var(--font-head); font-size: 16px; font-weight: 700; color: var(--chalk); }
+.play-lib-card__meta   { display: flex; gap: var(--space-3); font-size: 12px; color: var(--chalk-muted); }
+.play-lib-card__tags   { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+
+.play-lib-card__actions {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border);
+  background: var(--surface-3);
+}
+
+/* ─── Game Plans ─────────────────────────────────────────────── */
+.gp-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 0;
+  height: calc(100vh - 56px);
+  margin: calc(-1 * var(--space-6));
+  overflow: hidden;
+}
+
+.gp-sidebar {
+  border-right: 1px solid var(--border);
+  background: var(--surface-1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.gp-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.gp-sidebar-title {
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--chalk-dim);
+}
+
+.gp-list { flex: 1; overflow-y: auto; }
+.gp-list-empty { padding: var(--space-5); text-align: center; color: var(--chalk-muted); font-size: 13px; }
+
+.gp-list-item {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+.gp-list-item:hover  { background: var(--surface-2); }
+.gp-list-item.active { background: var(--turf-light); border-left: 3px solid var(--signal); }
+
+.gp-list-item__name { font-weight: 600; font-size: 14px; margin-bottom: 3px; }
+.gp-list-item__meta { display: flex; align-items: center; gap: var(--space-2); font-size: 12px; color: var(--chalk-muted); }
+
+.gp-main { overflow-y: auto; background: var(--surface-0); }
+
+.gp-detail { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-6); max-width: 860px; }
+
+.gp-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.gp-detail-header-left { display: flex; flex-direction: column; gap: var(--space-2); flex: 1; }
+.gp-detail-header-right { display: flex; gap: var(--space-3); flex-shrink: 0; }
+
+.gp-title-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--chalk);
+  font-family: var(--font-head);
+  font-size: 28px;
+  font-weight: 700;
+  padding: 4px 0;
+  width: 100%;
+}
+.gp-title-input:focus { outline: none; border-bottom-color: var(--signal); }
+
+.gp-subtitle-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  color: var(--chalk-dim);
+  font-size: 15px;
+  padding: 2px 0;
+  width: 100%;
+}
+.gp-subtitle-input:focus { outline: none; border-bottom-color: var(--border-light); }
+
+.gp-notes-row { display: flex; gap: var(--space-5); }
+
+.gp-sections { display: flex; flex-direction: column; gap: var(--space-4); }
+
+.gp-section {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.gp-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-5);
+  background: var(--surface-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.gp-section-title {
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--chalk-dim);
+}
+
+.gp-section-plays { display: flex; flex-direction: column; }
+.gp-section-empty { padding: var(--space-4) var(--space-5); color: var(--chalk-muted); font-size: 13px; }
+
+.gp-play-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.gp-play-row:last-child { border-bottom: none; }
+
+.gp-play-order {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--signal);
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.gp-play-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.gp-play-name { font-weight: 600; }
+.gp-play-formation { font-size: 11px; color: var(--chalk-muted); }
+.gp-play-note { font-size: 12px; color: var(--chalk-dim); font-style: italic; max-width: 200px; }
+
+/* ─── Opponents ──────────────────────────────────────────────── */
+.opponents-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 0;
+  height: calc(100vh - 56px);
+  margin: calc(-1 * var(--space-6));
+  overflow: hidden;
+}
+
+.opponents-sidebar {
+  border-right: 1px solid var(--border);
+  background: var(--surface-1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.opponents-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.opponents-sidebar-title {
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--chalk-dim);
+}
+
+.opp-list { flex: 1; overflow-y: auto; }
+.opp-list-empty { padding: var(--space-5); text-align: center; color: var(--chalk-muted); font-size: 13px; }
+
+.opp-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+.opp-list-item:hover  { background: var(--surface-2); }
+.opp-list-item.active { background: var(--turf-light); border-left: 3px solid var(--signal); }
+.opp-list-item__name   { font-weight: 600; font-size: 14px; }
+.opp-list-item__record { font-size: 12px; color: var(--chalk-muted); }
+
+.opponents-main { overflow-y: auto; background: var(--surface-0); }
+
+.opp-detail { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-6); max-width: 720px; }
+
+.opp-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.opp-detail-name   { font-family: var(--font-head); font-size: 30px; font-weight: 700; margin-bottom: 4px; }
+.opp-detail-record { font-size: 14px; color: var(--chalk-muted); }
+
+.opp-sections { display: flex; flex-direction: column; gap: var(--space-5); }
+
+.opp-section {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.opp-section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.opp-section-title {
+  font-family: var(--font-head);
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--chalk-dim);
+}
+
+.opp-text { font-size: 14px; line-height: 1.6; color: var(--chalk-dim); }
+.opp-empty-plays { font-size: 13px; color: var(--chalk-muted); }
+
+.opp-plays-list { display: flex; flex-direction: column; gap: var(--space-2); }
+
+.opp-play-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-3);
+  border-radius: var(--r-sm);
+}
+
+.opp-play-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.opp-play-name { font-weight: 600; font-size: 13px; }
+.opp-play-note { font-size: 12px; color: var(--chalk-muted); font-style: italic; }
+
+/* ─── Responsive Phase 3 ─────────────────────────────────────── */
+@media (max-width: 768px) {
+  .gp-layout, .opponents-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 160px 1fr;
+    height: auto;
+  }
+  .gp-notes-row { flex-direction: column; }
+  .lib-grid { grid-template-columns: 1fr; }
+  .lib-search-row { flex-direction: column; }
+}
