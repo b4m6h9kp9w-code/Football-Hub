@@ -54,10 +54,13 @@ const VIEWS = {
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     // Load role from Firestore
+    console.log('Signed in as UID:', user.uid);
     const snap = await getDoc(doc(db, 'coaches', user.uid));
+    console.log('Coach doc exists:', snap.exists(), snap.exists() ? snap.data() : 'NO DOC FOUND');
     const data = snap.exists() ? snap.data() : {};
     AppState.currentUser = user;
     AppState.userRole = data.role || 'assistant';
+    console.log('Role set to:', AppState.userRole);
 
     document.getElementById('auth-screen').classList.add('hidden');
     document.getElementById('app-shell').classList.remove('hidden');
