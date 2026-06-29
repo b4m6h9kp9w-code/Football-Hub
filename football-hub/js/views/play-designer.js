@@ -17,6 +17,22 @@ const TOOLS = [
   { id: 'erase',    label: 'Erase',    icon: '✕' },
 ];
 
+const FIELD_VIEWS = {
+  offensiveHalf: {
+    label: 'Offensive Half',
+    yardsShown: 50,
+    losYardLine: 35,
+    endZoneYards: 10,
+  },
+  redZone: {
+    label: 'Red Zone',
+    yardsShown: 25,
+    losYardLine: 20,
+    endZoneYards: 10,
+  },
+};
+
+let currentFieldView = 'offensiveHalf';
 let currentPlay = null;
 let formations = [];
 let history = [];
@@ -26,13 +42,11 @@ let autoSaveTimer = null;
 export function renderPlayDesigner(container, { db, AppState }) {
   loadFormations(db).then(f => { formations = f; });
 
-  // Check if we're editing an existing play (passed via window state)
   const editPlayId = window._editPlayId;
   window._editPlayId = null;
 
   container.innerHTML = `
     <div class="pd-layout">
-      <!-- Left: Play list -->
       <div class="pd-sidebar-left">
         <div class="pd-sidebar-header">
           <span class="pd-sidebar-title">Plays</span>
@@ -47,7 +61,6 @@ export function renderPlayDesigner(container, { db, AppState }) {
         <div id="pd-play-list" class="pd-play-list"></div>
       </div>
 
-      <!-- Center: Canvas -->
       <div class="pd-canvas-area" id="pd-canvas-area">
         <div class="pd-empty-state" id="pd-empty-state">
           <div style="font-size:48px;opacity:.3">✏️</div>
@@ -60,6 +73,9 @@ export function renderPlayDesigner(container, { db, AppState }) {
             <button class="pd-tool" id="pd-undo" title="Undo">↩</button>
             <button class="pd-tool" id="pd-redo" title="Redo">↪</button>
             <button class="pd-tool" id="pd-clear-routes" title="Clear Routes">🗑 Routes</button>
+            <div class="pd-toolbar-sep"></div>
+            <button class="pd-tool pd-view-toggle active" data-view="offensiveHalf" id="view-off-half" title="Offensive Half">OFF Half</button>
+            <button class="pd-tool pd-view-toggle" data-view="redZone" id="view-red-zone" title="Red Zone">Red Zone</button>
           </div>
           <div class="pd-canvas-wrap">
             <canvas id="pd-canvas"></canvas>
@@ -74,21 +90,18 @@ export function renderPlayDesigner(container, { db, AppState }) {
         </div>
       </div>
 
-      <!-- Right: Play details -->
       <div class="pd-sidebar-right" id="pd-sidebar-right" style="display:none">
         <div class="pd-details-scroll">
           <div class="pd-detail-section">
             <label class="form-label">Play Name</label>
             <input class="form-input" id="pd-play-name" placeholder="e.g. Slant Right">
           </div>
-
           <div class="pd-detail-section">
             <label class="form-label">Formation</label>
             <select class="form-select" id="pd-formation-select">
               <option value="">Select formation…</option>
             </select>
           </div>
-
           <div class="pd-detail-section">
             <label class="form-label">Side</label>
             <div class="toggle-group">
@@ -96,12 +109,10 @@ export function renderPlayDesigner(container, { db, AppState }) {
               <button class="toggle-btn" data-side="defense">Defense</button>
             </div>
           </div>
-
           <div class="pd-detail-section">
             <label class="form-label">Play Type</label>
             <select class="form-select" id="pd-play-type"></select>
           </div>
-
           <div class="pd-detail-section">
             <label class="form-label">Situation Tags</label>
             <div class="tag-checkboxes" id="pd-tags">
@@ -112,17 +123,14 @@ export function renderPlayDesigner(container, { db, AppState }) {
               `).join('')}
             </div>
           </div>
-
           <div class="pd-detail-section">
             <label class="form-label">Status</label>
             <span class="badge badge--gray" id="pd-status-badge">Draft</span>
           </div>
-
           <div class="pd-detail-section">
             <label class="form-label">Player Notes</label>
             <div class="player-notes-grid" id="pd-player-notes"></div>
           </div>
-
           <div class="pd-detail-section">
             <label class="form-label">Coach Notes <span style="color:var(--signal);font-size:10px">PRIVATE</span></label>
             <textarea class="form-input pd-textarea" id="pd-coach-notes" placeholder="Scout notes, adjustments…" rows="3"></textarea>
@@ -132,7 +140,6 @@ export function renderPlayDesigner(container, { db, AppState }) {
     </div>
   `;
 
-  // Load play list
   const unsubscribe = onSnapshot(
     query(collection(db, 'plays'), orderBy('updatedAt', 'desc')),
     snap => {
@@ -149,7 +156,6 @@ export function renderPlayDesigner(container, { db, AppState }) {
     openNewPlayDialog(container, { db, AppState });
   });
 
-  // Filter tabs
   container.querySelectorAll('.pd-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       container.querySelectorAll('.pd-tab').forEach(b => b.classList.remove('active'));
@@ -247,7 +253,6 @@ function openNewPlayDialog(container, { db, AppState }) {
       overlay.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       selectedSide = btn.dataset.side;
-      // Filter formations
       const sel = overlay.querySelector('#np-formation');
       const opts = formations.filter(f => f.side === selectedSide);
       sel.innerHTML = `<option value="">Blank canvas</option>` + opts.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
@@ -289,23 +294,22 @@ function openNewPlayDialog(container, { db, AppState }) {
 
 function getDefaultPlayers(side) {
   if (side === 'offense') return [
-    { pos: 'LT', x: 28, y: 55 }, { pos: 'LG', x: 36, y: 55 },
-    { pos: 'C',  x: 44, y: 55 }, { pos: 'RG', x: 52, y: 55 },
-    { pos: 'RT', x: 60, y: 55 }, { pos: 'QB', x: 44, y: 65 },
-    { pos: 'RB', x: 44, y: 76 }, { pos: 'WR', x: 10, y: 55 },
-    { pos: 'WR', x: 82, y: 55 }, { pos: 'TE', x: 68, y: 55 },
+    { id: 'lt', pos: 'LT', x: 28, y: 55 }, { id: 'lg', pos: 'LG', x: 36, y: 55 },
+    { id: 'c',  pos: 'C',  x: 44, y: 55 }, { id: 'rg', pos: 'RG', x: 52, y: 55 },
+    { id: 'rt', pos: 'RT', x: 60, y: 55 }, { id: 'qb', pos: 'QB', x: 44, y: 65 },
+    { id: 'rb', pos: 'RB', x: 44, y: 76 }, { id: 'wr1', pos: 'WR', x: 10, y: 55 },
+    { id: 'wr2', pos: 'WR', x: 82, y: 55 }, { id: 'te', pos: 'TE', x: 68, y: 55 },
   ];
   return [
-    { pos: 'DE',  x: 28, y: 45 }, { pos: 'DT', x: 38, y: 45 },
-    { pos: 'NT',  x: 48, y: 45 }, { pos: 'DT', x: 58, y: 45 },
-    { pos: 'DE',  x: 68, y: 45 }, { pos: 'MLB',x: 48, y: 56 },
-    { pos: 'OLB', x: 30, y: 56 }, { pos: 'OLB',x: 66, y: 56 },
-    { pos: 'CB',  x: 12, y: 45 }, { pos: 'CB', x: 84, y: 45 },
-    { pos: 'FS',  x: 48, y: 70 },
+    { id: 'de1', pos: 'DE',  x: 28, y: 45 }, { id: 'dt1', pos: 'DT', x: 38, y: 45 },
+    { id: 'nt',  pos: 'NT',  x: 48, y: 45 }, { id: 'dt2', pos: 'DT', x: 58, y: 45 },
+    { id: 'de2', pos: 'DE',  x: 68, y: 45 }, { id: 'mlb', pos: 'MLB',x: 48, y: 56 },
+    { id: 'olb1',pos: 'OLB', x: 30, y: 56 }, { id: 'olb2',pos: 'OLB',x: 66, y: 56 },
+    { id: 'cb1', pos: 'CB',  x: 12, y: 45 }, { id: 'cb2', pos: 'CB', x: 84, y: 45 },
+    { id: 'fs',  pos: 'FS',  x: 48, y: 70 },
   ];
 }
 
-// ─── Main Play Editor ─────────────────────────────────────────────────────
 function openPlay(play, container, { db, AppState }) {
   currentPlay = JSON.parse(JSON.stringify(play));
   history = [JSON.parse(JSON.stringify(currentPlay))];
@@ -315,7 +319,6 @@ function openPlay(play, container, { db, AppState }) {
   container.querySelector('#pd-editor').style.display = 'flex';
   container.querySelector('#pd-sidebar-right').style.display = 'flex';
 
-  // Highlight in list
   container.querySelectorAll('.pd-list-item').forEach(item => {
     item.classList.toggle('active', item.dataset.id === play.id);
   });
@@ -332,7 +335,6 @@ function populateDetails(container, { db, AppState }) {
   container.querySelector('#pd-status-badge').textContent = (p.status || 'draft').replace('_', ' ');
   container.querySelector('#pd-status-badge').className = `badge ${{ published: 'badge--green', draft: 'badge--gray', pending_approval: 'badge--yellow', archived: 'badge--red' }[p.status] || 'badge--gray'}`;
 
-  // Side toggle
   container.querySelectorAll('.toggle-btn[data-side]').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.side === p.side);
     btn.addEventListener('click', () => {
@@ -344,7 +346,6 @@ function populateDetails(container, { db, AppState }) {
     });
   });
 
-  // Formation select
   const formSel = container.querySelector('#pd-formation-select');
   const offFormations = formations.filter(f => f.side === p.side);
   formSel.innerHTML = `<option value="">No formation</option>` + offFormations.map(f => `<option value="${f.id}" ${f.id === p.formationId ? 'selected' : ''}>${f.name}</option>`).join('');
@@ -359,10 +360,8 @@ function populateDetails(container, { db, AppState }) {
     scheduleAutoSave(db);
   });
 
-  // Play type
   updatePlayTypeOptions(container);
 
-  // Tags
   container.querySelectorAll('#pd-tags input').forEach(cb => {
     cb.checked = (p.tags || []).includes(cb.value);
     cb.addEventListener('change', () => {
@@ -371,7 +370,6 @@ function populateDetails(container, { db, AppState }) {
     });
   });
 
-  // Player notes
   const notesGrid = container.querySelector('#pd-player-notes');
   const noteGroups = p.side === 'offense'
     ? ['QB', 'RB', 'WR', 'TE', 'OL']
@@ -391,7 +389,6 @@ function populateDetails(container, { db, AppState }) {
     });
   });
 
-  // Auto-save on name/notes change
   container.querySelector('#pd-play-name').addEventListener('input', () => {
     currentPlay.name = container.querySelector('#pd-play-name').value;
     scheduleAutoSave(db);
@@ -401,7 +398,6 @@ function populateDetails(container, { db, AppState }) {
     scheduleAutoSave(db);
   });
 
-  // Publish / Submit
   const publishBtn = container.querySelector('#pd-publish');
   const submitBtn  = container.querySelector('#pd-submit');
 
@@ -447,13 +443,11 @@ let isDrawing = false;
 let currentStroke = null;
 let selectedPlayer = null;
 let isDraggingPlayer = false;
-let curveControlPoint = null;
 
 function initCanvas(container, { db, AppState }) {
   const canvas = container.querySelector('#pd-canvas');
   const wrap   = container.querySelector('.pd-canvas-wrap');
 
-  // Size canvas to container
   function resizeCanvas() {
     const rect = wrap.getBoundingClientRect();
     canvas.width  = rect.width;
@@ -464,13 +458,20 @@ function initCanvas(container, { db, AppState }) {
   resizeCanvas();
   new ResizeObserver(resizeCanvas).observe(wrap);
 
-  // Tool buttons
   container.querySelectorAll('.pd-tool[data-tool]').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tool === activeTool);
     btn.addEventListener('click', () => {
       activeTool = btn.dataset.tool;
       container.querySelectorAll('.pd-tool[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === activeTool));
       canvas.style.cursor = activeTool === 'select' ? 'default' : 'crosshair';
+    });
+  });
+
+  container.querySelectorAll('.pd-view-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentFieldView = btn.dataset.view;
+      container.querySelectorAll('.pd-view-toggle').forEach(b => b.classList.toggle('active', b.dataset.view === currentFieldView));
+      redrawCanvas(container);
     });
   });
 
@@ -485,13 +486,11 @@ function initCanvas(container, { db, AppState }) {
     scheduleAutoSave(db);
   });
 
-  // Mouse events
   canvas.addEventListener('mousedown',  e => onPointerDown(e, canvas, container, db));
   canvas.addEventListener('mousemove',  e => onPointerMove(e, canvas, container, db));
   canvas.addEventListener('mouseup',    e => onPointerUp(e, canvas, container, db));
   canvas.addEventListener('mouseleave', () => { isDrawing = false; isDraggingPlayer = false; });
 
-  // Touch events
   canvas.addEventListener('touchstart', e => { e.preventDefault(); onPointerDown(e.touches[0], canvas, container, db); }, { passive: false });
   canvas.addEventListener('touchmove',  e => { e.preventDefault(); onPointerMove(e.touches[0], canvas, container, db); }, { passive: false });
   canvas.addEventListener('touchend',   e => { e.preventDefault(); onPointerUp(e.changedTouches[0], canvas, container, db); }, { passive: false });
@@ -534,21 +533,18 @@ function onPointerDown(e, canvas, container, db) {
     return;
   }
 
-  // Drawing tools
   isDrawing = true;
   const playerIdx = findPlayerAt(pos.x, pos.y, canvas);
   const W = canvas.width, H = canvas.height;
+  const player = playerIdx >= 0 ? currentPlay.players[playerIdx] : null;
 
   currentStroke = {
     tool: activeTool,
     points: [{ x: pos.x / W * 100, y: pos.y / H * 100 }],
     fromPlayer: playerIdx >= 0 ? playerIdx : null,
+    playerId: player?.id || null,
     color: getToolColor(activeTool),
   };
-
-  if (activeTool === 'curve') {
-    curveControlPoint = null;
-  }
 }
 
 function onPointerMove(e, canvas, container, db) {
@@ -564,7 +560,6 @@ function onPointerMove(e, canvas, container, db) {
   }
 
   if (!isDrawing || !currentStroke) return;
-
   currentStroke.points.push({ x: pos.x / W * 100, y: pos.y / H * 100 });
   redrawCanvas(container, currentStroke);
 }
@@ -632,22 +627,102 @@ function redrawCanvas(container, liveStroke = null) {
 }
 
 function drawField(ctx, W, H) {
-  // Background
+  const view = FIELD_VIEWS[currentFieldView];
+
   ctx.fillStyle = '#0f1b12';
   ctx.fillRect(0, 0, W, H);
 
-  // Yard lines
-  ctx.strokeStyle = '#1e3523';
-  ctx.lineWidth = 1;
-  for (let i = 1; i < 10; i++) {
+  const yardsShown = view.yardsShown;
+  const ezYards    = view.endZoneYards;
+  const fieldYards = yardsShown - ezYards;
+  const pxPerYard  = H / yardsShown;
+  const ezH        = ezYards * pxPerYard;
+
+  const losFromEZ = fieldYards - (currentFieldView === 'offensiveHalf' ? 35 : 20);
+  const losY = ezH + losFromEZ * pxPerYard;
+
+  // End zone
+  ctx.fillStyle = '#162a1b';
+  ctx.fillRect(0, 0, W, ezH);
+  ctx.fillStyle = '#1e4a28';
+  ctx.font = `bold ${Math.max(11, W * 0.025)}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('END ZONE', W / 2, ezH / 2);
+
+  // 5-yard lines
+  const fontSize = Math.max(9, W * 0.016);
+  ctx.font = `${fontSize}px sans-serif`;
+  ctx.textBaseline = 'middle';
+
+  for (let yd = 0; yd <= fieldYards; yd += 5) {
+    const lineY = ezH + yd * pxPerYard;
     ctx.beginPath();
-    ctx.moveTo(0, (i / 10) * H);
-    ctx.lineTo(W, (i / 10) * H);
+    ctx.moveTo(0, lineY);
+    ctx.lineTo(W, lineY);
+    if (yd % 10 === 0) {
+      ctx.strokeStyle = '#254a2e';
+      ctx.lineWidth = 1.5;
+    } else {
+      ctx.strokeStyle = '#1a3020';
+      ctx.lineWidth = 0.8;
+    }
+    ctx.stroke();
+
+    if (yd > 0 && yd % 5 === 0) {
+      const startYardLine = currentFieldView === 'offensiveHalf' ? 40 : 20;
+      const yardLabel = startYardLine - yd;
+      if (yardLabel >= 0) {
+        ctx.fillStyle = '#3a6040';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${yardLabel}`, 4, lineY);
+        ctx.textAlign = 'right';
+        ctx.fillText(`${yardLabel}`, W - 4, lineY);
+      }
+    }
+  }
+
+  // Hash marks (NFL: 70'9" from sideline = 44.2% from each sideline)
+  const hashLeft  = W * 0.442;
+  const hashRight = W * 0.558;
+  const hashLen   = Math.max(6, W * 0.012);
+
+  ctx.strokeStyle = '#4a7a50';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([]);
+
+  for (let yd = 0; yd <= fieldYards; yd++) {
+    const lineY = ezH + yd * pxPerYard;
+    ctx.beginPath();
+    ctx.moveTo(hashLeft - hashLen / 2, lineY);
+    ctx.lineTo(hashLeft + hashLen / 2, lineY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(hashRight - hashLen / 2, lineY);
+    ctx.lineTo(hashRight + hashLen / 2, lineY);
     ctx.stroke();
   }
 
+  // Subtle vertical hash guides
+  ctx.strokeStyle = '#1e3020';
+  ctx.lineWidth = 0.5;
+  ctx.setLineDash([2, 6]);
+  ctx.beginPath(); ctx.moveTo(hashLeft, ezH); ctx.lineTo(hashLeft, H); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(hashRight, ezH); ctx.lineTo(hashRight, H); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Sidelines
+  ctx.strokeStyle = '#3a6040';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, H); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(W, 0); ctx.lineTo(W, H); ctx.stroke();
+
+  // End zone line
+  ctx.strokeStyle = '#4a7a50';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, ezH); ctx.lineTo(W, ezH); ctx.stroke();
+
   // LOS
-  const losY = H * 0.52;
   ctx.strokeStyle = '#e8c84b';
   ctx.lineWidth = 2;
   ctx.setLineDash([8, 5]);
@@ -658,17 +733,17 @@ function drawField(ctx, W, H) {
   ctx.setLineDash([]);
 
   ctx.fillStyle = '#a08c2a';
-  ctx.font = `${Math.max(10, W * 0.018)}px sans-serif`;
+  ctx.font = `bold ${Math.max(9, W * 0.016)}px sans-serif`;
   ctx.textAlign = 'left';
-  ctx.fillText('LOS', 6, losY - 4);
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('LOS', 6, losY - 2);
 
-  // End zone hint at top
-  ctx.fillStyle = '#162a1b';
-  ctx.fillRect(0, 0, W, H * 0.06);
-  ctx.fillStyle = '#2a4a30';
-  ctx.font = `bold ${Math.max(10, W * 0.02)}px sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.fillText('END ZONE', W / 2, H * 0.04);
+  // View label
+  ctx.fillStyle = '#2a4a35';
+  ctx.font = `${Math.max(9, W * 0.014)}px sans-serif`;
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText(view.label, W - 6, H - 4);
 }
 
 function drawRoutes(ctx, W, H, routes) {
@@ -685,7 +760,6 @@ function drawSingleRoute(ctx, W, H, route) {
   ctx.lineJoin = 'round';
 
   if (route.tool === 'motion') {
-    // Wavy line
     ctx.setLineDash([]);
     ctx.beginPath();
     ctx.moveTo(pts[0].x, pts[0].y);
@@ -695,7 +769,6 @@ function drawSingleRoute(ctx, W, H, route) {
     }
     ctx.stroke();
   } else if (route.tool === 'option') {
-    // Dotted line
     ctx.setLineDash([4, 6]);
     ctx.beginPath();
     ctx.moveTo(pts[0].x, pts[0].y);
@@ -703,7 +776,6 @@ function drawSingleRoute(ctx, W, H, route) {
     ctx.stroke();
     ctx.setLineDash([]);
   } else if (route.tool === 'block') {
-    // Block symbol — X at end
     const last = pts[pts.length - 1];
     const r = 8;
     ctx.strokeStyle = route.color;
@@ -711,7 +783,6 @@ function drawSingleRoute(ctx, W, H, route) {
     ctx.beginPath(); ctx.moveTo(last.x - r, last.y - r); ctx.lineTo(last.x + r, last.y + r); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(last.x + r, last.y - r); ctx.lineTo(last.x - r, last.y + r); ctx.stroke();
   } else if (route.tool === 'curve') {
-    // Smooth curved line
     ctx.setLineDash([]);
     ctx.beginPath();
     ctx.moveTo(pts[0].x, pts[0].y);
@@ -724,7 +795,6 @@ function drawSingleRoute(ctx, W, H, route) {
     ctx.stroke();
     drawArrowhead(ctx, pts[pts.length-2], pts[pts.length-1], route.color);
   } else {
-    // Straight route with arrow
     ctx.setLineDash([]);
     ctx.beginPath();
     ctx.moveTo(pts[0].x, pts[0].y);
@@ -755,7 +825,6 @@ function drawPlayers(ctx, W, H) {
     const isOff = currentPlay.side === 'offense';
     const isSelected = selectedPlayer === i;
 
-    // Glow if selected
     if (isSelected) {
       ctx.beginPath();
       ctx.arc(x, y, r + 4, 0, Math.PI * 2);
@@ -771,7 +840,6 @@ function drawPlayers(ctx, W, H) {
     ctx.lineWidth = isSelected ? 2.5 : 1.5;
     ctx.stroke();
 
-    // Position label
     ctx.fillStyle = '#fff';
     ctx.font = `bold ${Math.max(8, r * 0.7)}px sans-serif`;
     ctx.textAlign = 'center';
