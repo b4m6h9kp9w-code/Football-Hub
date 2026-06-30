@@ -21,17 +21,20 @@ const FIELD_VIEWS = {
   offensiveHalf: {
     label: 'Offensive Half',
     yardsShown: 50,
-    losYardLine: 35,
     endZoneYards: 10,
+    losFromTop: 40,
+    aspectW: 53.33,
+    aspectH: 50,
   },
   redZone: {
     label: 'Red Zone',
-    yardsShown: 25,
-    losYardLine: 20,
+    yardsShown: 30,
     endZoneYards: 10,
+    losFromTop: 20,
+    aspectW: 53.33,
+    aspectH: 30,
   },
 };
-
 let currentFieldView = 'offensiveHalf';
 let currentPlay = null;
 let formations = [];
@@ -449,11 +452,13 @@ function initCanvas(container, { db, AppState }) {
   const wrap   = container.querySelector('.pd-canvas-wrap');
 
   function resizeCanvas() {
-    const rect = wrap.getBoundingClientRect();
-    canvas.width  = rect.width;
-    canvas.height = rect.height || rect.width * (14/9);
-    redrawCanvas(container);
-  }
+  const rect = wrap.getBoundingClientRect();
+  const view = FIELD_VIEWS[currentFieldView];
+  const aspectRatio = view.aspectH / view.aspectW;
+  canvas.width  = rect.width;
+  canvas.height = rect.width * aspectRatio;
+  redrawCanvas(container);
+}
 
   resizeCanvas();
   new ResizeObserver(resizeCanvas).observe(wrap);
@@ -468,12 +473,12 @@ function initCanvas(container, { db, AppState }) {
   });
 
   container.querySelectorAll('.pd-view-toggle').forEach(btn => {
-    btn.addEventListener('click', () => {
-      currentFieldView = btn.dataset.view;
-      container.querySelectorAll('.pd-view-toggle').forEach(b => b.classList.toggle('active', b.dataset.view === currentFieldView));
-      redrawCanvas(container);
-    });
+  btn.addEventListener('click', () => {
+    currentFieldView = btn.dataset.view;
+    container.querySelectorAll('.pd-view-toggle').forEach(b => b.classList.toggle('active', b.dataset.view === currentFieldView));
+    resizeCanvas();
   });
+});
 
   container.querySelector('#pd-undo').addEventListener('click', () => undo(container));
   container.querySelector('#pd-redo').addEventListener('click', () => redo(container));
@@ -632,36 +637,34 @@ function drawField(ctx, W, H) {
   ctx.fillStyle = '#0f1b12';
   ctx.fillRect(0, 0, W, H);
 
-  const yardsShown = view.yardsShown;
-  const ezYards    = view.endZoneYards;
-  const fieldYards = yardsShown - ezYards;
-  const pxPerYard  = H / yardsShown;
-  const ezH        = ezYards * pxPerYard;
-
-  const losFromEZ = fieldYards - (currentFieldView === 'offensiveHalf' ? 35 : 20);
-  const losY = ezH + losFromEZ * pxPerYard;
+  const pxPerYard  = H / view.yardsShown;
+  const ezH        = view.endZoneYards * pxPerYard;
+  const fieldYards = view.yardsShown - view.endZoneYards;
+  const losY       = view.losFromTop * pxPerYard;
 
   // End zone
   ctx.fillStyle = '#162a1b';
   ctx.fillRect(0, 0, W, ezH);
-  ctx.fillStyle = '#1e4a28';
-  ctx.font = `bold ${Math.max(11, W * 0.025)}px sans-serif`;
+  ctx.fillStyle = '#2a5a35';
+  ctx.font = `bold ${Math.max(10, W * 0.02)}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('END ZONE', W / 2, ezH / 2);
 
-  // 5-yard lines
-  const fontSize = Math.max(9, W * 0.016);
+  // Yard lines every 5 yards
+  const fontSize = Math.max(8, W * 0.013);
   ctx.font = `${fontSize}px sans-serif`;
   ctx.textBaseline = 'middle';
+  ctx.setLineDash([]);
 
   for (let yd = 0; yd <= fieldYards; yd += 5) {
-    const lineY = ezH + yd * pxPerYard;
+    const lineY  = ezH + yd * pxPerYard;
+    const yardNum = 10 + yd;
     ctx.beginPath();
     ctx.moveTo(0, lineY);
     ctx.lineTo(W, lineY);
     if (yd % 10 === 0) {
-      ctx.strokeStyle = '#254a2e';
+      ctx.strokeStyle = '#2a5a34';
       ctx.lineWidth = 1.5;
     } else {
       ctx.strokeStyle = '#1a3020';
@@ -669,23 +672,20 @@ function drawField(ctx, W, H) {
     }
     ctx.stroke();
 
-    if (yd > 0 && yd % 5 === 0) {
-      const startYardLine = currentFieldView === 'offensiveHalf' ? 40 : 20;
-      const yardLabel = startYardLine - yd;
-      if (yardLabel >= 0) {
-        ctx.fillStyle = '#3a6040';
-        ctx.textAlign = 'left';
-        ctx.fillText(`${yardLabel}`, 4, lineY);
-        ctx.textAlign = 'right';
-        ctx.fillText(`${yardLabel}`, W - 4, lineY);
-      }
+    if (yd > 0 && yardNum <= 50) {
+      ctx.fillStyle = '#3a6040';
+      ctx.textAlign = 'left';
+      ctx.fillText(`${yardNum}`, 5, lineY);
+      ctx.textAlign = 'right';
+      ctx.fillText(`${yardNum}`, W - 5, lineY);
     }
   }
 
-  // Hash marks (NFL: 70'9" from sideline = 44.2% from each sideline)
-  const hashLeft  = W * 0.442;
-  const hashRight = W * 0.558;
-  const hashLen   = Math.max(6, W * 0.012);
+  // Hash marks: high school / college
+  // 53'4" from each sideline = 33.3% from each side
+  const hashLeft  = W * 0.333;
+  const hashRight = W * 0.667;
+  const hashLen   = pxPerYard * 0.5;
 
   ctx.strokeStyle = '#4a7a50';
   ctx.lineWidth = 1.5;
@@ -694,32 +694,32 @@ function drawField(ctx, W, H) {
   for (let yd = 0; yd <= fieldYards; yd++) {
     const lineY = ezH + yd * pxPerYard;
     ctx.beginPath();
-    ctx.moveTo(hashLeft - hashLen / 2, lineY);
-    ctx.lineTo(hashLeft + hashLen / 2, lineY);
+    ctx.moveTo(hashLeft - hashLen, lineY);
+    ctx.lineTo(hashLeft + hashLen, lineY);
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(hashRight - hashLen / 2, lineY);
-    ctx.lineTo(hashRight + hashLen / 2, lineY);
+    ctx.moveTo(hashRight - hashLen, lineY);
+    ctx.lineTo(hashRight + hashLen, lineY);
     ctx.stroke();
   }
 
-  // Subtle vertical hash guides
+  // Subtle vertical hash column guides
   ctx.strokeStyle = '#1e3020';
   ctx.lineWidth = 0.5;
-  ctx.setLineDash([2, 6]);
+  ctx.setLineDash([2, 8]);
   ctx.beginPath(); ctx.moveTo(hashLeft, ezH); ctx.lineTo(hashLeft, H); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(hashRight, ezH); ctx.lineTo(hashRight, H); ctx.stroke();
   ctx.setLineDash([]);
 
   // Sidelines
-  ctx.strokeStyle = '#3a6040';
-  ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, H); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(W, 0); ctx.lineTo(W, H); ctx.stroke();
-
-  // End zone line
   ctx.strokeStyle = '#4a7a50';
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(1, 0); ctx.lineTo(1, H); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(W - 1, 0); ctx.lineTo(W - 1, H); ctx.stroke();
+
+  // Goal line
+  ctx.strokeStyle = '#5a9a65';
+  ctx.lineWidth = 2.5;
   ctx.beginPath(); ctx.moveTo(0, ezH); ctx.lineTo(W, ezH); ctx.stroke();
 
   // LOS
@@ -732,18 +732,18 @@ function drawField(ctx, W, H) {
   ctx.stroke();
   ctx.setLineDash([]);
 
-  ctx.fillStyle = '#a08c2a';
-  ctx.font = `bold ${Math.max(9, W * 0.016)}px sans-serif`;
+  ctx.fillStyle = '#b09a30';
+  ctx.font = `bold ${Math.max(8, W * 0.013)}px sans-serif`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'bottom';
-  ctx.fillText('LOS', 6, losY - 2);
+  ctx.fillText('LOS', 5, losY - 2);
 
   // View label
   ctx.fillStyle = '#2a4a35';
-  ctx.font = `${Math.max(9, W * 0.014)}px sans-serif`;
+  ctx.font = `${Math.max(8, W * 0.011)}px sans-serif`;
   ctx.textAlign = 'right';
   ctx.textBaseline = 'bottom';
-  ctx.fillText(view.label, W - 6, H - 4);
+  ctx.fillText(view.label, W - 5, H - 3);
 }
 
 function drawRoutes(ctx, W, H, routes) {
@@ -821,7 +821,7 @@ function drawPlayers(ctx, W, H) {
   players.forEach((p, i) => {
     const x = (p.x / 100) * W;
     const y = (p.y / 100) * H;
-    const r = Math.max(12, W * 0.022);
+    const r = Math.max(7, W * 0.013);
     const isOff = currentPlay.side === 'offense';
     const isSelected = selectedPlayer === i;
 
