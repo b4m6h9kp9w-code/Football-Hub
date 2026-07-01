@@ -157,7 +157,6 @@ function renderLibrary(container, { db, AppState, headCoach }) {
     `;
   }).join('');
 
-  // Edit → open in play designer
   grid.querySelectorAll('[data-action="edit"]').forEach(btn => {
     btn.addEventListener('click', () => {
       window._editPlayId = btn.dataset.id;
@@ -195,27 +194,4 @@ function renderLibrary(container, { db, AppState, headCoach }) {
       if (ok) { await updateDoc(doc(db, 'plays', btn.dataset.id), { status: 'published', updatedAt: serverTimestamp() }); toast('Play published ✓'); }
     });
   });
-}
-
-  const playerDots = players.map(p => {
-    const x = (p.x / 100) * W;
-    const y = (p.y / 100) * H;
-    const color = play.side === 'offense' ? '#4caf74' : '#d94f3d';
-    return `<circle cx="${x}" cy="${y}" r="7" fill="${color}" stroke="#0f1b12" stroke-width="1.5"/>
-            <text x="${x}" y="${y+3}" text-anchor="middle" font-size="5" fill="#fff" font-family="sans-serif" font-weight="bold">${p.pos}</text>`;
-  }).join('');
-
-  const routeLines = routes.map(r => {
-    if (!r.points || r.points.length < 2) return '';
-    const pts = r.points.map(p => `${(p.x/100)*W},${(p.y/100)*H}`).join(' ');
-    const dash = r.tool === 'option' ? 'stroke-dasharray="3,4"' : '';
-    return `<polyline points="${pts}" fill="none" stroke="${r.color || '#f0d04e'}" stroke-width="1.5" stroke-linecap="round" ${dash}/>`;
-  }).join('');
-
-  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
-    <rect width="${W}" height="${H}" fill="#0f1b12"/>
-    <line x1="0" y1="${H*0.52}" x2="${W}" y2="${H*0.52}" stroke="#e8c84b" stroke-width="1" stroke-dasharray="5,4" opacity="0.5"/>
-    ${routeLines}
-    ${playerDots}
-  </svg>`;
 }
