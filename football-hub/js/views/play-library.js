@@ -4,6 +4,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { toast, confirm, generateId, isHeadCoach, emptyState, debounce } from '../modules/utils.js';
 import { navigate } from '../app.js';
+import { renderPlayThumbnail } from './play-thumbnail.js';
 
 const SITUATION_TAGS = ['Base', 'Red Zone', 'Goal Line', 'Short Yardage', 'Two Minute', 'Third and Long'];
 const PLAY_TYPES_OFF = ['Run', 'Pass', 'Screen', 'Play Action', 'RPO'];
@@ -195,11 +196,6 @@ function renderLibrary(container, { db, AppState, headCoach }) {
     });
   });
 }
-
-function renderPlayThumbnail(play) {
-  const players = play.players || [];
-  const routes  = play.routes  || [];
-  const W = 240, H = 180;
 
   const playerDots = players.map(p => {
     const x = (p.x / 100) * W;
