@@ -35,18 +35,22 @@ const FIELD_VIEWS = {
     aspectH: 30,
   },
 };
+
 let currentFieldView = 'offensiveHalf';
 let currentPlay = null;
 let formations = [];
 let history = [];
 let historyIndex = -1;
 let autoSaveTimer = null;
+let allPlays = [];
+let editPlayOpened = false;
 
 export function renderPlayDesigner(container, { db, AppState }) {
   loadFormations(db).then(f => { formations = f; });
 
   const editPlayId = window._editPlayId;
   window._editPlayId = null;
+  editPlayOpened = false;
 
   container.innerHTML = `
     <div class="pd-layout">
@@ -77,8 +81,8 @@ export function renderPlayDesigner(container, { db, AppState }) {
             <button class="pd-tool" id="pd-redo" title="Redo">↪</button>
             <button class="pd-tool" id="pd-clear-routes" title="Clear Routes">🗑 Routes</button>
             <div class="pd-toolbar-sep"></div>
-            <button class="pd-tool pd-view-toggle active" data-view="offensiveHalf" id="view-off-half" title="Offensive Half">OFF Half</button>
-            <button class="pd-tool pd-view-toggle" data-view="redZone" id="view-red-zone" title="Red Zone">Red Zone</button>
+            <button class="pd-tool pd-view-toggle active" data-view="offensiveHalf" title="Offensive Half">OFF Half</button>
+            <button class="pd-tool pd-view-toggle" data-view="redZone" title="Red Zone">Red Zone</button>
           </div>
           <div class="pd-canvas-wrap">
             <canvas id="pd-canvas"></canvas>
@@ -146,11 +150,16 @@ export function renderPlayDesigner(container, { db, AppState }) {
   const unsubscribe = onSnapshot(
     query(collection(db, 'plays'), orderBy('updatedAt', 'desc')),
     snap => {
-      const plays = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      renderPlayList(plays, container, { db, AppState });
-      if (editPlayId) {
-        const play = plays.find(p => p.id === editPlayId);
-        if (play) openPlay(play, container, { db, AppState });
+      allPlays = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderPlayList(allPlays, container, { db, AppState });
+
+      // Only open editPlayId once on first load, never again
+      if (editPlayId && !editPlayOpened) {
+        const play = allPlays.find(p => p.id === editPlayId);
+        if (play) {
+          editPlayOpened = true;
+          openPlay(play, container, { db, AppState });
+        }
       }
     }
   );
@@ -163,7 +172,12 @@ export function renderPlayDesigner(container, { db, AppState }) {
     btn.addEventListener('click', () => {
       container.querySelectorAll('.pd-tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      renderPlayList(allPlays, container, { db, AppState });
     });
+  });
+
+  container.querySelector('#pd-search').addEventListener('input', () => {
+    renderPlayList(allPlays, container, { db, AppState });
   });
 }
 
@@ -207,8 +221,6 @@ function renderPlayList(plays, container, ctx) {
       if (play) openPlay(play, container, ctx);
     });
   });
-
-  container.querySelector('#pd-search').addEventListener('input', () => renderPlayList(plays, container, ctx));
 }
 
 function openNewPlayDialog(container, { db, AppState }) {
@@ -452,13 +464,13 @@ function initCanvas(container, { db, AppState }) {
   const wrap   = container.querySelector('.pd-canvas-wrap');
 
   function resizeCanvas() {
-  const rect = wrap.getBoundingClientRect();
-  const view = FIELD_VIEWS[currentFieldView];
-  const aspectRatio = view.aspectH / view.aspectW;
-  canvas.width  = rect.width;
-  canvas.height = rect.width * aspectRatio;
-  redrawCanvas(container);
-}
+    const rect = wrap.getBoundingClientRect();
+    const view = FIELD_VIEWS[currentFieldView];
+    const aspectRatio = view.aspectH / view.aspectW;
+    canvas.width  = rect.width;
+    canvas.height = rect.width * aspectRatio;
+    redrawCanvas(container);
+  }
 
   resizeCanvas();
   new ResizeObserver(resizeCanvas).observe(wrap);
@@ -473,12 +485,12 @@ function initCanvas(container, { db, AppState }) {
   });
 
   container.querySelectorAll('.pd-view-toggle').forEach(btn => {
-  btn.addEventListener('click', () => {
-    currentFieldView = btn.dataset.view;
-    container.querySelectorAll('.pd-view-toggle').forEach(b => b.classList.toggle('active', b.dataset.view === currentFieldView));
-    resizeCanvas();
+    btn.addEventListener('click', () => {
+      currentFieldView = btn.dataset.view;
+      container.querySelectorAll('.pd-view-toggle').forEach(b => b.classList.toggle('active', b.dataset.view === currentFieldView));
+      resizeCanvas();
+    });
   });
-});
 
   container.querySelector('#pd-undo').addEventListener('click', () => undo(container));
   container.querySelector('#pd-redo').addEventListener('click', () => redo(container));
@@ -617,7 +629,6 @@ function getToolColor(tool) {
   return colors[tool] || '#f0d04e';
 }
 
-// ─── Canvas Rendering ─────────────────────────────────────────────────────
 function redrawCanvas(container, liveStroke = null) {
   const canvas = container.querySelector('#pd-canvas');
   if (!canvas || !currentPlay) return;
@@ -642,7 +653,6 @@ function drawField(ctx, W, H) {
   const fieldYards = view.yardsShown - view.endZoneYards;
   const losY       = view.losFromTop * pxPerYard;
 
-  // End zone
   ctx.fillStyle = '#162a1b';
   ctx.fillRect(0, 0, W, ezH);
   ctx.fillStyle = '#2a5a35';
@@ -651,7 +661,6 @@ function drawField(ctx, W, H) {
   ctx.textBaseline = 'middle';
   ctx.fillText('END ZONE', W / 2, ezH / 2);
 
-  // Yard lines every 5 yards
   const fontSize = Math.max(8, W * 0.013);
   ctx.font = `${fontSize}px sans-serif`;
   ctx.textBaseline = 'middle';
@@ -671,7 +680,6 @@ function drawField(ctx, W, H) {
       ctx.lineWidth = 0.8;
     }
     ctx.stroke();
-
     if (yd > 0 && yardNum <= 50) {
       ctx.fillStyle = '#3a6040';
       ctx.textAlign = 'left';
@@ -681,8 +689,6 @@ function drawField(ctx, W, H) {
     }
   }
 
-  // Hash marks: high school / college
-  // 53'4" from each sideline = 33.3% from each side
   const hashLeft  = W * 0.333;
   const hashRight = W * 0.667;
   const hashLen   = pxPerYard * 0.5;
@@ -703,7 +709,6 @@ function drawField(ctx, W, H) {
     ctx.stroke();
   }
 
-  // Subtle vertical hash column guides
   ctx.strokeStyle = '#1e3020';
   ctx.lineWidth = 0.5;
   ctx.setLineDash([2, 8]);
@@ -711,18 +716,15 @@ function drawField(ctx, W, H) {
   ctx.beginPath(); ctx.moveTo(hashRight, ezH); ctx.lineTo(hashRight, H); ctx.stroke();
   ctx.setLineDash([]);
 
-  // Sidelines
   ctx.strokeStyle = '#4a7a50';
   ctx.lineWidth = 2.5;
   ctx.beginPath(); ctx.moveTo(1, 0); ctx.lineTo(1, H); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(W - 1, 0); ctx.lineTo(W - 1, H); ctx.stroke();
 
-  // Goal line
   ctx.strokeStyle = '#5a9a65';
   ctx.lineWidth = 2.5;
   ctx.beginPath(); ctx.moveTo(0, ezH); ctx.lineTo(W, ezH); ctx.stroke();
 
-  // LOS
   ctx.strokeStyle = '#e8c84b';
   ctx.lineWidth = 2;
   ctx.setLineDash([8, 5]);
@@ -738,7 +740,6 @@ function drawField(ctx, W, H) {
   ctx.textBaseline = 'bottom';
   ctx.fillText('LOS', 5, losY - 2);
 
-  // View label
   ctx.fillStyle = '#2a4a35';
   ctx.font = `${Math.max(8, W * 0.011)}px sans-serif`;
   ctx.textAlign = 'right';
@@ -848,7 +849,6 @@ function drawPlayers(ctx, W, H) {
   });
 }
 
-// ─── History ──────────────────────────────────────────────────────────────
 function pushHistory() {
   history = history.slice(0, historyIndex + 1);
   history.push(JSON.parse(JSON.stringify(currentPlay)));
@@ -871,7 +871,6 @@ function redo(container) {
   toast('Redone', 'success', 1000);
 }
 
-// ─── Auto Save ────────────────────────────────────────────────────────────
 function scheduleAutoSave(db) {
   const statusEl = document.getElementById('pd-autosave-status');
   if (statusEl) statusEl.textContent = 'Saving…';
