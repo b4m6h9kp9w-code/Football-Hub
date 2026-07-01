@@ -12,14 +12,12 @@ const db  = getFirestore(app);
 const STORAGE_KEY = 'football_hub_player_pos';
 let playerPosition = localStorage.getItem(STORAGE_KEY);
 
-// ─── Init ─────────────────────────────────────────────────────────────────
 if (!playerPosition) {
   showPositionPicker();
 } else {
   showPlayerApp(playerPosition);
 }
 
-// ─── Position Picker ──────────────────────────────────────────────────────
 function showPositionPicker() {
   document.getElementById('position-picker').classList.remove('hidden');
   const grid = document.getElementById('picker-grid');
@@ -48,7 +46,6 @@ function showPositionPicker() {
   });
 }
 
-// ─── Player App ───────────────────────────────────────────────────────────
 function showPlayerApp(position) {
   playerPosition = position;
   document.getElementById('player-app').classList.remove('hidden');
@@ -71,7 +68,6 @@ function showPlayerApp(position) {
   loadPlaybook(position);
 }
 
-// ─── Playbook ─────────────────────────────────────────────────────────────
 async function loadPlaybook(position) {
   const main = document.getElementById('player-main');
   main.innerHTML = `<div class="loading-line"></div>`;
@@ -140,61 +136,8 @@ function renderPlayCard(play, position) {
   `;
 }
 
-  // Group map to match position to group
-  const groupMap = {
-    QB: 'QB', RB: 'RB', FB: 'RB',
-    WR: 'WR', TE: 'TE',
-    LT: 'OL', LG: 'OL', C: 'OL', RG: 'OL', RT: 'OL',
-    DE: 'DL', DT: 'DL', NT: 'DL',
-    MLB: 'LB', OLB: 'LB', ILB: 'LB',
-    CB: 'DB', FS: 'DB', SS: 'DB', NB: 'DB',
-  };
-  const highlightGroup = highlightPosition ? groupMap[highlightPosition] : null;
-
-  // Find which player indices match the highlighted position
-  const highlightedPlayerIds = new Set(
-    players
-      .filter(p => p.pos === highlightPosition || p.pos === highlightGroup)
-      .map(p => p.id)
-  );
-
-  const playerDots = players.map(p => {
-    const x = (p.x / 100) * W;
-    const y = (p.y / 100) * H;
-    const isHighlighted = highlightedPlayerIds.has(p.id);
-    const baseColor = play.side === 'offense' ? '#4caf74' : '#d94f3d';
-    const fillColor = isHighlighted ? '#f0d04e' : baseColor;
-    const strokeColor = isHighlighted ? '#fff' : '#0f1b12';
-    const radius = isHighlighted ? 9 : 7;
-    return `
-      <circle cx="${x}" cy="${y}" r="${radius}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="1.5"/>
-      <text x="${x}" y="${y+3}" text-anchor="middle" font-size="5" fill="${isHighlighted ? '#000' : '#fff'}" font-family="sans-serif" font-weight="bold">${p.pos}</text>
-    `;
-  }).join('');
-
-  const routeLines = routes.map(r => {
-    if (!r.points || r.points.length < 2) return '';
-    const pts = r.points.map(p => `${(p.x/100)*W},${(p.y/100)*H}`).join(' ');
-    const dash = r.tool === 'option' ? 'stroke-dasharray="3,4"' : '';
-    // Check if this route belongs to a highlighted player
-    const isHighlightedRoute = r.playerId && highlightedPlayerIds.has(r.playerId);
-    const strokeColor = isHighlightedRoute ? '#f0d04e' : (r.color || '#f0d04e');
-    const strokeWidth = isHighlightedRoute ? '2.5' : '1.5';
-    const opacity = (highlightPosition && !isHighlightedRoute) ? 'opacity="0.35"' : '';
-    return `<polyline points="${pts}" fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round" ${dash} ${opacity}/>`;
-  }).join('');
-
-  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;border-radius:6px">
-    <rect width="${W}" height="${H}" fill="#0f1b12"/>
-    <line x1="0" y1="${H*0.52}" x2="${W}" y2="${H*0.52}" stroke="#e8c84b" stroke-width="1" stroke-dasharray="5,4" opacity="0.5"/>
-    ${routeLines}
-    ${playerDots}
-  </svg>`;
-}
-
 function getNoteForPosition(play, position) {
   if (!play.playerNotes) return null;
-  // Match exact position or group (e.g. WR, QB, OL)
   const groupMap = {
     QB: 'QB', RB: 'RB', FB: 'RB',
     WR: 'WR', TE: 'TE',
@@ -207,7 +150,6 @@ function getNoteForPosition(play, position) {
   return play.playerNotes[position] || play.playerNotes[group] || null;
 }
 
-// ─── Game Plan ────────────────────────────────────────────────────────────
 async function loadGamePlan(position) {
   const main = document.getElementById('player-main');
   main.innerHTML = `<div class="loading-line"></div>`;
@@ -224,11 +166,9 @@ async function loadGamePlan(position) {
   const gp = snap.docs[0].data();
   const SECTIONS = ['Opening Script', 'Run Game', 'Pass Game', 'Red Zone', 'Goal Line', 'Situational', 'Specials'];
 
-  // Fetch all plays referenced in the game plan so we can show their details
   const allPlayIds = SECTIONS.flatMap(s => (gp.sections?.[s] || []).map(entry => entry.playId)).filter(Boolean);
   let playsById = {};
   if (allPlayIds.length > 0) {
-    // Fetch in chunks of 10 (Firestore 'in' limit)
     const chunks = [];
     for (let i = 0; i < allPlayIds.length; i += 10) chunks.push(allPlayIds.slice(i, i + 10));
     for (const chunk of chunks) {
