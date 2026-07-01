@@ -4,6 +4,7 @@ import {
   getFirestore, collection, query, where, getDocs, orderBy, limit
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { OFFENSE_POSITIONS, DEFENSE_POSITIONS } from './modules/utils.js';
+import { renderPlayThumbnail } from './play-thumbnail.js';
 
 const app = initializeApp(FIREBASE_CONFIG);
 const db  = getFirestore(app);
@@ -138,11 +139,6 @@ function renderPlayCard(play, position) {
     </div>
   `;
 }
-
-function renderPlayThumbnail(play, highlightPosition) {
-  const players = play.players || [];
-  const routes  = play.routes  || [];
-  const W = 300, H = 200;
 
   // Group map to match position to group
   const groupMap = {
