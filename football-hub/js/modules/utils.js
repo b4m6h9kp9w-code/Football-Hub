@@ -48,7 +48,7 @@ export function confirm(message, { confirmLabel = 'Confirm', danger = false } = 
 }
 
 // ─── Position Helpers ─────────────────────────────────────────────────────
-export const OFFENSE_POSITIONS = ['QB', 'RB', 'FB', 'WR', 'TE', 'LT', 'LG', 'C', 'RG', 'RT'];
+export const OFFENSE_POSITIONS = ['QB', 'RB', 'FB', 'WR', 'X', 'Y', 'Z', 'TE', 'LT', 'LG', 'C', 'RG', 'RT'];
 export const DEFENSE_POSITIONS = ['DE', 'DT', 'NT', 'MLB', 'OLB', 'ILB', 'CB', 'FS', 'SS', 'NB'];
 export const ALL_POSITIONS = [...OFFENSE_POSITIONS, ...DEFENSE_POSITIONS];
 
