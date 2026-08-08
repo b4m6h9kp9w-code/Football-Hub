@@ -3,7 +3,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 import {
   getFirestore, collection, query, where, getDocs, orderBy, limit
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-import { OFFENSE_POSITIONS, DEFENSE_POSITIONS } from './modules/utils.js';
+import { DEFENSE_POSITIONS } from './modules/utils.js';
 import { renderPlayThumbnail } from './views/play-thumbnail.js';
 
 const app = initializeApp(FIREBASE_CONFIG);
@@ -22,8 +22,10 @@ function showPositionPicker() {
   document.getElementById('position-picker').classList.remove('hidden');
   const grid = document.getElementById('picker-grid');
 
+  // X/Y/Z are canvas labels only — players pick WR
+  const PLAYER_OFFENSE = ['QB', 'RB', 'FB', 'WR', 'TE', 'LT', 'LG', 'C', 'RG', 'RT'];
   const sections = [
-    { label: 'Offense', positions: OFFENSE_POSITIONS },
+    { label: 'Offense', positions: PLAYER_OFFENSE },
     { label: 'Defense', positions: DEFENSE_POSITIONS },
   ];
 
@@ -140,7 +142,7 @@ function getNoteForPosition(play, position) {
   if (!play.playerNotes) return null;
   const groupMap = {
     QB: 'QB', RB: 'RB', FB: 'RB',
-    WR: 'WR', TE: 'TE',
+    WR: 'WR', X: 'WR', Y: 'WR', Z: 'WR', TE: 'TE',
     LT: 'OL', LG: 'OL', C: 'OL', RG: 'OL', RT: 'OL',
     DE: 'DL', DT: 'DL', NT: 'DL',
     MLB: 'LB', OLB: 'LB', ILB: 'LB',
