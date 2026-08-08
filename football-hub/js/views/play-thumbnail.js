@@ -46,7 +46,7 @@ export function renderPlayThumbnail(play, highlightPosition = null) {
   svg += `<text x="4" y="${losY - 2}" font-size="7" font-weight="bold" fill="#b09a30" font-family="sans-serif" dominant-baseline="auto">LOS</text>`;
 
   const groupMap = {
-    QB:'QB', RB:'RB', FB:'RB', WR:'WR', TE:'TE',
+    QB:'QB', RB:'RB', FB:'RB', WR:'WR', X:'WR', Y:'WR', Z:'WR', TE:'TE',
     LT:'OL', LG:'OL', C:'OL', RG:'OL', RT:'OL',
     DE:'DL', DT:'DL', NT:'DL',
     MLB:'LB', OLB:'LB', ILB:'LB',
