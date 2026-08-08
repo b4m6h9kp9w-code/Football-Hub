@@ -4,7 +4,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { toast, confirm, generateId, isHeadCoach, OFFENSE_POSITIONS, DEFENSE_POSITIONS } from '../modules/utils.js';
 
-const SITUATION_TAGS = ['Base', 'Red Zone', 'Goal Line', 'Short Yardage', 'Two Minute', 'Third and Long'];
+const SITUATION_TAGS = ['Base', 'Red Zone', 'Goal Line', 'Short Yardage', 'Two Minute', 'Third and Long', 'One Pointer', 'Two Pointer', 'Three Pointer'];
 const PLAY_TYPES_OFF = ['Run', 'Pass', 'Screen', 'Play Action', 'RPO'];
 const PLAY_TYPES_DEF = ['Base Defense', 'Blitz', 'Zone', 'Man', 'Prevent'];
 const TOOLS = [
