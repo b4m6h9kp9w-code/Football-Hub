@@ -312,8 +312,9 @@ function getDefaultPlayers(side) {
     { id: 'lt', pos: 'LT', x: 28, y: 55 }, { id: 'lg', pos: 'LG', x: 36, y: 55 },
     { id: 'c',  pos: 'C',  x: 44, y: 55 }, { id: 'rg', pos: 'RG', x: 52, y: 55 },
     { id: 'rt', pos: 'RT', x: 60, y: 55 }, { id: 'qb', pos: 'QB', x: 44, y: 65 },
-    { id: 'rb', pos: 'RB', x: 44, y: 76 }, { id: 'wr1', pos: 'WR', x: 10, y: 55 },
-    { id: 'wr2', pos: 'WR', x: 82, y: 55 }, { id: 'te', pos: 'TE', x: 68, y: 55 },
+    { pos: 'RB', x: 44, y: 76 }, { pos: 'X', x: 8, y: 55 },
+{ pos: 'Z', x: 84, y: 55 }, { pos: 'Y', x: 68, y: 55 },
+{ pos: 'TE', x: 76, y: 55 },
   ];
   return [
     { id: 'de1', pos: 'DE',  x: 28, y: 45 }, { id: 'dt1', pos: 'DT', x: 38, y: 45 },
